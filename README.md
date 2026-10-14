@@ -1,61 +1,59 @@
-# Arduino IR Countdown Timer
+# ⏱️ Arduino IR Countdown Timer
 
-A versatile countdown timer for Arduino controlled via an IR Remote, featuring a 4-digit 7-segment display.
+![Arduino](https://img.shields.io/badge/Arduino-Uno-1f2328?style=flat-square&logo=arduino&logoColor=white)
+![C++](https://img.shields.io/badge/C%2B%2B-sketch-1f2328?style=flat-square&logo=cplusplus&logoColor=white)
 
-## 🚀 Features
+A countdown timer of up to 99 minutes, controlled with an **infrared remote** and shown on a **4-digit 7-segment display** as `MM.SS`.
 
-- **Countdown**: High-precision countdown from up to 99 minutes.
-- **IR Control**: Fully operated via infrared remote control.
-- **Visual Feedback**: Displays `---` when idle and blinks all segments when the time is up.
-- **Dynamic adjustment**: Intelligent time adjustment (+/- 10 minutes or +/- 1 minute depending on the current time).
+![The timer on a breadboard with the Arduino Uno and the IR remote](docs/photo.png)
 
-## 🛠️ Hardware Requirements
+## How it works
 
-- **Arduino** (Uno, Nano, or similar)
-- **4-Digit 7-Segment Display** (Common Cathode)
-- **IR Receiver** (e.g., AX-1838)
-- **IR Remote Control**
-- Jumper wires and Breadboard
+- At start-up, or after a reset, the display shows two horizontal bars on each digit.
+- **Start/pause** sets the timer to 60:00, then starts and pauses the countdown.
+- **+ / −** change the time by 10 minutes, or by 1 minute below 10 minutes and near the 99-minute limit.
+- **Reset** stops the timer and goes back to the bars.
+- When the countdown reaches 00:00, the whole display blinks until you set a new time.
 
-## 🔌 Pinout & Wiring
+The four digits are **multiplexed**: the sketch lights one digit at a time for 2 ms and cycles through them continuously.
+The countdown uses `millis()` instead of `delay()`, so the display keeps refreshing and the remote stays responsive while it counts.
+Repeated IR codes within 300 ms are ignored, so holding a button down doesn't jump several steps.
 
-### 7-Segment Display (4 Digits)
-Connect the segment and digit pins as follows:
+## Hardware
 
-| Component | Arduino Pin |
-|-----------|-------------|
-| Segment A | 2           |
-| Segment B | 3           |
-| Segment C | 4           |
-| Segment D | 5           |
-| Segment E | 6           |
-| Segment F | 7           |
-| Segment G | 8           |
-| Digit 1   | 9           |
-| Digit 2   | 10          |
-| Digit 3   | 11          |
-| Digit 4   | 12          |
-| Decimal Pt| A5          |
+- Arduino Uno (or Nano)
+- 4-digit 7-segment display, common cathode
+- IR receiver (e.g. VS1838B) and a small NEC remote, like the 21-key ones in Arduino kits
+- Breadboard and jumper wires, plus current-limiting resistors for the segments
 
-### IR Receiver
-| Pin | Arduino Pin |
-|-----|-------------|
-| OUT | 13          |
-| VCC | 5V          |
-| GND | GND         |
+## Wiring
 
-## 🎮 Remote Controls
+| Arduino pin | Connected to |
+| --- | --- |
+| 2 – 8 | Segments A – G |
+| A5 | Decimal point |
+| 9 – 12 | Digits 1 – 4 (common pins) |
+| 13 | IR receiver OUT (VCC to 5V, GND to GND) |
 
-The timer uses the following IR command hex codes (standard for many generic remotes):
+## Remote commands
 
-- **0x43 (Play/Pause)**: Start or Pause the timer. If finished or idle, sets time to 60:00.
-- **0x44 (Reset)**: Stops the timer and clears the display to idle state (`---`).
-- **0x15 (+)**: Adds 10 minutes (or 1 minute if below 10 min).
-- **0x07 (-)**: Subtracts 10 minutes (or 1 minute if below 10 min).
+| IR command | Action |
+| --- | --- |
+| `0x43` | Set 60:00 / start / pause |
+| `0x44` | Reset |
+| `0x15` | Add time |
+| `0x07` | Remove time |
 
-## 📦 Dependencies
+Which button sends which code depends on the remote. Open the Serial Monitor at 115200 baud: every button you press is printed as `Command received: 0x..`. Then change the `CMD_*` constants at the top of the sketch to the buttons you want.
 
-This project requires the **IRremote** library. You can install it via the Arduino Library Manager.
+## Running it
 
----
-*Created as a project demonstration.*
+Install the **IRremote** library (Library Manager → *IRremote* by Armin Joachimsmeyer, version 4.x), open `Arduino_Timer.ino`, choose **Arduino Uno** and click **Upload**.
+
+Or with [arduino-cli](https://arduino.github.io/arduino-cli/):
+
+```bash
+arduino-cli core install arduino:avr
+arduino-cli lib install IRremote
+arduino-cli compile -b arduino:avr:uno --upload -p <port> .
+```

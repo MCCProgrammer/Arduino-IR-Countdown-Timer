@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <IRremote.hpp>
 
-// ==================== CÓDIGOS DOS BOTÕES IR ====================
-uint8_t CMD_START_PAUSE   = 0x43;  // Botão para iniciar/pausar
-uint8_t CMD_RESET         = 0x44;  // Botão para resetar
-uint8_t CMD_ADD_10_MIN    = 0x15;  // Botão para +10 minutos
-uint8_t CMD_SUB_10_MIN    = 0x07;  // Botão para -10 minutos
+// ==================== IR BUTTON CODES ====================
+uint8_t CMD_START_PAUSE   = 0x43;  // start/pause button
+uint8_t CMD_RESET         = 0x44;  // reset button
+uint8_t CMD_ADD_10_MIN    = 0x15;  // +10 minutes button
+uint8_t CMD_SUB_10_MIN    = 0x07;  // -10 minutes button
 
-// ==================== PINOS DISPLAY 7 SEGMENTOS ====================
+// ==================== 7-SEGMENT DISPLAY PINS ====================
 #define PIN_A 2
 #define PIN_B 3
 #define PIN_C 4
@@ -23,7 +23,7 @@ uint8_t CMD_SUB_10_MIN    = 0x07;  // Botão para -10 minutos
 #define PIN_DP A5
 #define IR_RECEIVE_PIN 13
 
-// Mapeamento dígitos 0..9
+// Segment patterns for digits 0..9
 const bool DIGITS[10][7] = {
   {1,1,1,1,1,1,0}, //0
   {0,1,1,0,0,0,0}, //1
@@ -40,27 +40,27 @@ const bool DIGITS[10][7] = {
 const int segmentPins[7] = {PIN_A, PIN_B, PIN_C, PIN_D, PIN_E, PIN_F, PIN_G};
 const int digitPins[4]   = {DIGIT1, DIGIT2, DIGIT3, DIGIT4};
 
-// ==================== VARIÁVEIS DO TIMER ====================
+// ==================== TIMER STATE ====================
 unsigned long lastUpdate = 0;
 int minutes = 0;
 int seconds = 0;
 bool running = false;
-bool initialState = true; // Mostra barras horizontais no início
-bool finished = false;    // Indica que o timer acabou
+bool initialState = true; // shows horizontal bars at start-up
+bool finished = false;    // the countdown has finished
 unsigned long blinkTimer = 0;
 bool blinkState = false;
-unsigned long lastCmdTime = 0;       // último comando recebido
+unsigned long lastCmdTime = 0;       // time of the last IR command
 const unsigned long cmdDelay = 300;
 
-// ==================== FUNÇÕES DISPLAY ====================
+// ==================== DISPLAY FUNCTIONS ====================
 void showDigit(int num, int digit, bool dp = false) {
   for (int i = 0; i < 4; i++) digitalWrite(digitPins[i], HIGH);
 
   for (int s = 0; s < 7; s++) {
-    // Cátodo comum
+    // common cathode
     digitalWrite(segmentPins[s], DIGITS[num][s] ? HIGH : LOW);
   }
-  if (dp) digitalWrite(PIN_DP, HIGH); // acende ponto decimal
+  if (dp) digitalWrite(PIN_DP, HIGH); // decimal point on
   else digitalWrite(PIN_DP, LOW);
   digitalWrite(digitPins[digit], LOW);
   delay(2);
@@ -79,12 +79,12 @@ void displayNumber(int value) {
   }
 }
 
-// Mostra barras horizontais (segmentos A e D acesos)
+// Shows horizontal bars (segments A and D on)
 void displayBars() {
   for (int i = 0; i < 4; i++) {
     for (int s = 0; s < 7; s++) {
-      if (s == 0 || s == 3) digitalWrite(segmentPins[s], HIGH); // A e D acesas
-      else digitalWrite(segmentPins[s], LOW);                     // resto apagado
+      if (s == 0 || s == 3) digitalWrite(segmentPins[s], HIGH); // A and D on
+      else digitalWrite(segmentPins[s], LOW);                     // the rest off
     }
     digitalWrite(digitPins[i], LOW);
     delay(2);
@@ -92,7 +92,7 @@ void displayBars() {
   }
 }
 
-// Piscar display quando o timer termina
+// Blinks the whole display when the countdown ends
 void displayFinished() {
   if (millis() - blinkTimer >= 500) {
     blinkTimer = millis();
@@ -121,7 +121,7 @@ void setup() {
   pinMode(PIN_DP, OUTPUT);
   digitalWrite(PIN_DP, LOW);
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
-  Serial.println(F("Pronto. Configure os códigos IR e use os botões."));
+  Serial.println(F("Ready. Use the remote to control the timer."));
 }
 
 // ==================== LOOP ====================
@@ -135,7 +135,7 @@ void loop() {
     displayNumber(displayValue);
   }
 
-  // Timer regressivo
+  // Countdown
   if (!initialState && running && !finished && millis() - lastUpdate >= 1000) {
     lastUpdate = millis();
     seconds--;
@@ -152,7 +152,7 @@ void loop() {
     }
   }
 
-  // Leitura IR
+  // IR input
   if (IrReceiver.decode()) {
     if (IrReceiver.decodedIRData.protocol != UNKNOWN) {
       uint8_t cmd = IrReceiver.decodedIRData.command;
@@ -162,7 +162,7 @@ void loop() {
       }
       lastCmdTime = millis();
       
-      Serial.print(F("Comando recebido: 0x"));
+      Serial.print(F("Command received: 0x"));
       Serial.println(cmd, HEX);
 
       if (cmd == CMD_START_PAUSE ) {
@@ -175,7 +175,7 @@ void loop() {
           return;
         }
         running = !running;
-        Serial.println(running ? F("Timer iniciado") : F("Timer pausado"));
+        Serial.println(running ? F("Timer started") : F("Timer paused"));
       }
       else if (cmd == CMD_RESET) {
         running = false;
@@ -183,7 +183,7 @@ void loop() {
         seconds = 0;
         initialState = true;
         finished = false;
-        Serial.println(F("Timer resetado"));
+        Serial.println(F("Timer reset"));
       }
       else if (cmd == CMD_ADD_10_MIN) {
         if (initialState) {
@@ -197,7 +197,7 @@ void loop() {
           if (minutes > 99) minutes = 99;
         }
         finished = false;
-        Serial.println(F("+10 minutos"));
+        Serial.println(F("+ time"));
       }
       else if (cmd == CMD_SUB_10_MIN) {
         if (initialState) {
@@ -205,13 +205,13 @@ void loop() {
           seconds = 0;
           initialState = false;
         } else {
-          if (minutes <= 10) minutes--;        // Subtrai 1 minuto se <10
+          if (minutes <= 10) minutes--;        // subtract 1 minute below 10
           else if(minutes <= 99 && minutes > 90) minutes --; 
           else minutes -= 10;
           if (minutes < 0) minutes = 0;
         }
         finished = false;
-        Serial.println(F("- tempo"));
+        Serial.println(F("- time"));
       }
     }
     IrReceiver.resume();
