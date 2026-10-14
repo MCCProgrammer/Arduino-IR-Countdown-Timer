@@ -5,8 +5,10 @@
 
 A countdown timer of up to 99 minutes, controlled with an **infrared remote** and shown on a **4-digit 7-segment display** as `MM.SS`.
 
-![Photo: the timer on a breadboard with the Arduino Uno and the IR remote](docs/photo.png)
-<sub>Real photo of the build, edited with AI to remove the jumper wires so the components are easier to see.</sub>
+<p align="center">
+  <img src="docs/photo.png" alt="Photo: the timer on a breadboard with the Arduino Uno and the IR remote" width="420"><br>
+  <sub>Real photo of the build, edited with AI to remove the jumper wires so the components are easier to see.</sub>
+</p>
 
 ## How it works
 
